@@ -3,38 +3,26 @@ import { connect } from 'react-redux';
 import CardList from '../components/CardList';
 import SearchBox from '../components/SearchBox'
 import Scroll from '../components/Scroll';
-import ErrorBoundary from '../components/ErrorBoundary';
-import { robotData } from '../robotData';
-import './App.css';
 import { setSearchField } from '../actions';
+import { requestRobots } from '../actions';
+import ErrorBoundary from '../components/ErrorBoundary';
+import './App.css';
 
 class App extends Component {
-  state = {
-    robots: []
-  };
-  
   componentDidMount() {
-    fetch('https://jsonplaceholder.typicode.com/users')
-      .then(res => res.json())
-      .then(robots => this.setState({robots}));
+    this.props.onMount();
   }
   
-  onSearchChange = event => {
-    this.props.searchChanged(event.target.value);
-    this.setState({robots: robotData});
-  };
-  
   render() {
-    let {robots} = this.state;
-    let { searchValue } = this.props;
-    robots = this.state.robots
+    let {robots, isPending, searchValue} = this.props;
+    robots = robots
                  .filter(r => r.name.toLowerCase().includes(searchValue.toLowerCase()));
-    return !robots.length
+    return isPending
       ? <h1>Loading...</h1>
       : (
         <div className="tc">
           <h1 className="f1">RoboFriends</h1>
-          <SearchBox searchChange={this.onSearchChange}/>
+          <SearchBox searchChange={(e) => this.props.searchChanged(e)}/>
           <Scroll>
             <ErrorBoundary>
               <CardList data={robots}/>
@@ -44,12 +32,16 @@ class App extends Component {
   }
 }
 
-const mapStateToProps = ({searchValue}) => ({
-  searchValue
+const mapStateToProps = state => ({
+  searchValue: state.searchRobots.searchValue,
+  robots: state.requestRobots.robots,
+  isPending: state.requestRobots.isPending,
+  error: state.requestRobots.error
 });
 
 const mapDispatchToProps = dispatch => ({
-  searchChanged: value => dispatch(setSearchField(value))
+  searchChanged: event => dispatch(setSearchField(event.target.value)),
+  onMount: () => dispatch(requestRobots())
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(App);
